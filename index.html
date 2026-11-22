@@ -591,7 +591,17 @@
   .strip-preview { position: absolute; inset: 0; pointer-events: none; }
   .strip-preview > div { position: absolute !important; bottom: var(--strip-baseline, 0px); left: 0; transform-origin: bottom left; }
   .strip-preview p { margin: 0; }
+  .strip-preview > div > div { height: 100%; pointer-events: auto; }
   .strip-preview img { display: block; }
+  .counter.show-case-cursor, .counter.show-case-cursor .strip-preview > div > div { cursor: none; }
+  .case-cursor {
+    position: fixed;
+    top: 0; left: 0; z-index: 39;
+    color: var(--blue);
+    font: 13px/1.15 var(--grotesk);
+    white-space: nowrap;
+    pointer-events: none;
+  }
   .strip-preview video { display: block; width: 100%; height: 100%; object-fit: cover; }
   /* The alpha video includes empty margins around the jar. */
   .strip-preview .ventonyl-video {
@@ -1120,6 +1130,34 @@
   var stripScale = 1.5;
   var pointerY = null;
   var pointerX = null;
+  var caseCursor = document.createElement('span');
+  caseCursor.className = 'case-cursor';
+  caseCursor.textContent = 'View case';
+  caseCursor.hidden = true;
+  caseCursor.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(caseCursor);
+
+  function updateCaseCursor() {
+    // The cursor also sets the top edge, so sample just inside the strip.
+    var hit = pointerX === null ? null : document.elementFromPoint(pointerX, pointerY);
+    if (hit && counter.contains(hit) && !hit.closest('.strip-preview')) {
+      hit = document.elementFromPoint(pointerX, pointerY + 2);
+    }
+    var overCase = Boolean(!grab && hit && hit.closest('.strip-preview > div > div'));
+    counter.classList.toggle('show-case-cursor', overCase);
+    caseCursor.hidden = !overCase;
+    if (overCase) {
+      var x = Math.min(pointerX + 12, innerWidth - caseCursor.offsetWidth - 4);
+      var y = Math.min(pointerY + 12, innerHeight - caseCursor.offsetHeight - 4);
+      caseCursor.style.transform = 'translate3d(' + x + 'px,' + y + 'px,0)';
+    }
+  }
+  function hideCaseCursor() {
+    pointerX = null;
+    updateCaseCursor();
+  }
+  document.documentElement.addEventListener('pointerleave', hideCaseCursor);
+  window.addEventListener('blur', hideCaseCursor);
   var scaleAnchor = (counter.clientWidth || innerWidth) / 2;
   var projection;
   var stripLayoutWidth = strip.firstElementChild.offsetWidth;
@@ -1168,7 +1206,7 @@
     depthMarkers.forEach(function (marker, index) {
       marker.style.bottom = (index * 400) + 'px';
     });
-    if (pointerY !== null) applyPointerScale();
+    if (pointerX !== null) applyPointerScale();
   }
 
   function applyPointerScale() {
@@ -1179,7 +1217,11 @@
   }
 
   window.addEventListener('pointermove', function (event) {
-    if (event.pointerType !== 'mouse' || event.target.closest('.belt-panel')) return;
+    if (event.pointerType !== 'mouse') return;
+    if (event.target.closest('.belt-panel')) {
+      hideCaseCursor();
+      return;
+    }
     pointerX = event.clientX;
     pointerY = event.clientY;
     applyPointerScale();
@@ -1219,6 +1261,7 @@
       });
     }
     rubber.style.setProperty('--belt-offset', distance.toFixed(2) + 'px');
+    updateCaseCursor();
   }
   function sizePictures() { paint(); }
   function layout() { paint(); }
