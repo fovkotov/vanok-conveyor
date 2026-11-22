@@ -591,6 +591,7 @@
   .strip-preview { position: absolute; inset: 0; pointer-events: none; }
   .strip-preview > div { position: absolute !important; bottom: var(--strip-baseline, 0px); left: 0; transform-origin: bottom left; }
   .strip-preview p { margin: 0; }
+  .strip-preview > div::after { content: ""; flex: 0 0 0; }
   .strip-preview > div > div { height: 100%; pointer-events: auto; }
   .strip-preview img { display: block; }
   .counter.show-case-cursor, .counter.show-case-cursor .strip-preview > div > div { cursor: none; }
